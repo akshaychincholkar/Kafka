@@ -1,0 +1,44 @@
+package com.game.kafkalearnings;
+
+import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
+
+public class ProducerDemoCallBack {
+    public static void main(String[] args) {
+        final Logger log = LoggerFactory.getLogger(ProducerDemoCallBack.class);
+//        Create producer properties
+        String bootstrap_Servers = "ec2-3-15-17-134.us-east-2.compute.amazonaws.com:9092";
+        Properties properties = new Properties();
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,bootstrap_Servers);
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+//        create producer
+        KafkaProducer<String,String> producer = new KafkaProducer<String, String>(properties);
+        for(int i=0;i<10;i++){
+//        Create record to send
+            ProducerRecord<String,String> record = new ProducerRecord<String, String>("first_topic","hello java world - "+i);
+
+//        send data
+            producer.send(record, new Callback() {
+                public void onCompletion(RecordMetadata recordMetadata, Exception e) {
+                    if(e==null){
+                        log.info("Topic: "+recordMetadata.topic()+"\n"+
+                                "Offset: "+recordMetadata.offset()+"\n"+
+                                "Partition: "+recordMetadata.partition() +"\n"+
+                                "Timestamp: "+recordMetadata.timestamp());
+                    }else{
+                        log.error(e.getMessage());
+                    }
+                }
+            });
+        }
+//        close connection
+        producer.flush();
+        producer.close();
+    }
+}
